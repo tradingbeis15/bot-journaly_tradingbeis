@@ -1,8 +1,21 @@
 <!--
 ═══════════════════════════════════════════════════════════════════════
+TRADINGBEIS v46 - Menú móvil completo
+Build: 2026-05-05
+Cambios desde v45:
+  PUNTO 1: Agregados al menú móvil "Más" los items que faltaban:
+           - 🤖 Bot
+           - ⚡ Ejecución
+           - 💳 Pagos (lleva a Mi Cuenta → tab Pagos)
+           - 📨 Mensajes (lleva a Mi Cuenta → tab Mensajes)
+  PUNTO 2: Nueva función mnGoMiCuentaTab(tab) para ir a Mi Cuenta
+           con una sub-pestaña específica abierta.
+═══════════════════════════════════════════════════════════════════════
+
+═══════════════════════════════════════════════════════════════════════
 TRADINGBEIS v45 - Ganancia/Pérdida = ops - retiros + % al lado
-Build: 2026-05-05 
-Cambios desde v44: 
+Build: 2026-05-05
+Cambios desde v44:
   PUNTO 1: Nueva fórmula de Ganancia/Pérdida.
            Antes (v44): solo suma de operaciones.
            Ahora (v45): suma_ops - retiros (se "resetea" tras cada
@@ -320,7 +333,7 @@ Creado por Daniel Pérez
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>TRADINGBEIS v45</title>
+<title>TRADINGBEIS v46</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ─── SUPABASE CONFIG ───────────────────────────────────────────
@@ -2139,8 +2152,8 @@ body.tb-plan-locked .nav-i.tb-nav-locked::after{
 </style>
 <script>
 // v05: marca de version para diagnostico en consola
-console.log('%c[TB] TRADINGBEIS v45 cargado','color:#d4a843;font-weight:bold;font-size:12px;');
-window.TB_VERSION = 'v45';
+console.log('%c[TB] TRADINGBEIS v46 cargado','color:#d4a843;font-weight:bold;font-size:12px;');
+window.TB_VERSION = 'v46';
 
 function volverPortada(){
   document.getElementById('login-screen').classList.remove('show');
@@ -6002,10 +6015,13 @@ function buildCalMes(highlight){
   var mp=ge('cal-mes-pnl');if(mp){mp.textContent=(mPnl>=0?'+':'')+'$'+Math.abs(mPnl).toFixed(2);mp.className='sc-val '+(mPnl>0?'gld':mPnl<0?'neg':'');}
   var mt=ge('cal-mes-trades');if(mt)mt.textContent=mOps;var mw=ge('cal-mes-win');if(mw)mw.textContent=mWin;var ml=ge('cal-mes-loss');if(ml)ml.textContent=mLoss;
   // Stats anuales
+  // v45.1: P&L Año = suma_ops - retiros (consistente con Dashboard)
   var allPnl=Object.keys(CAL_DATA).reduce(function(s,k){return s+CAL_DATA[k].pnl;},0);
+  var totalRetiradoCal = (HIST_DATA||[]).reduce(function(s,r){return s+(r.monto||0);},0);
+  var allPnlNeto = allPnl - totalRetiradoCal;
   var allWin=Object.keys(CAL_DATA).filter(function(k){return CAL_DATA[k].pnl>0;}).length;
   var allLoss=Object.keys(CAL_DATA).filter(function(k){return CAL_DATA[k].pnl<0;}).length;
-  var cap=ge('cal-ano-pnl');if(cap){cap.textContent=(allPnl>=0?'+$':'-$')+Math.abs(allPnl).toFixed(2);cap.className='sc-val '+(allPnl>0?'pos':allPnl<0?'neg':'');}
+  var cap=ge('cal-ano-pnl');if(cap){cap.textContent=(allPnlNeto>=0?'+$':'-$')+Math.abs(allPnlNeto).toFixed(2);cap.className='sc-val '+(allPnlNeto>0?'pos':allPnlNeto<0?'neg':'');}
   var cat=ge('cal-ano-trades');if(cat)cat.textContent=TRADES.length;
   var caw=ge('cal-ano-win');if(caw)caw.textContent=allWin;
   var cal2=ge('cal-ano-loss');if(cal2)cal2.textContent=allLoss;
@@ -10178,9 +10194,13 @@ alter publication supabase_realtime add table public.actividad;
     <div class="mobile-more-item" onclick="mnGoExtra('emociones')"><span class="mmi-ico">😌</span>Emociones</div>
     <div class="mobile-more-item" onclick="mnGoExtra('notas')"><span class="mmi-ico">📓</span>Notas</div>
     <div class="mobile-more-item" onclick="mnGoExtra('reglas')"><span class="mmi-ico">🛡</span>Reglas</div>
+    <div class="mobile-more-item" onclick="mnGoExtra('bot')"><span class="mmi-ico">🤖</span>Bot</div>
+    <div class="mobile-more-item" onclick="mnGoExtra('ejecucion')"><span class="mmi-ico">⚡</span>Ejecución</div>
     <div class="mobile-more-item" onclick="mnGoExtra('certificados')"><span class="mmi-ico">📄</span>Certificados</div>
     <div class="mobile-more-item" onclick="mnGoExtra('config')"><span class="mmi-ico">⚙️</span>Configuración</div>
     <div class="mobile-more-item" onclick="mnGoMiCuenta()"><span class="mmi-ico">👤</span>Mi Cuenta</div>
+    <div class="mobile-more-item" onclick="mnGoMiCuentaTab('pagos')"><span class="mmi-ico">💳</span>Pagos</div>
+    <div class="mobile-more-item" onclick="mnGoMiCuentaTab('mensajes')"><span class="mmi-ico">📨</span>Mensajes</div>
     <div class="mobile-more-item" onclick="mnGoAdmin()" id="mn-admin-link"><span class="mmi-ico">🔐</span>Administrador</div>
     <div class="mobile-more-item" onclick="logout();mnToggleMore();" style="grid-column:span 3;background:rgba(255,71,87,.08);border-color:rgba(255,71,87,.3);color:var(--red);"><span class="mmi-ico">🚪</span>Cerrar Sesión</div>
   </div>
@@ -10239,6 +10259,14 @@ function mnGoMiCuenta(){
   var mms=document.getElementById('mms');if(mms)mms.classList.remove('on');
   var mmb=document.getElementById('mmb');if(mmb)mmb.classList.remove('on');
   if(typeof navMiCuenta==='function') navMiCuenta('perfil',null);
+}
+// v46: Ir a Mi Cuenta directo a una sub-pestaña (pagos, mensajes, etc.)
+function mnGoMiCuentaTab(tab){
+  mnClearActive();
+  var mnMore=document.getElementById('mn-more');if(mnMore)mnMore.classList.add('on');
+  var mms=document.getElementById('mms');if(mms)mms.classList.remove('on');
+  var mmb=document.getElementById('mmb');if(mmb)mmb.classList.remove('on');
+  if(typeof navMiCuenta==='function') navMiCuenta(tab,null);
 }
 function mnGoAdmin(){
   mnClearActive();
@@ -13620,7 +13648,7 @@ function tbGenerarBotUnico(userId){
 </script>
 
 <!-- v05: etiqueta de version siempre visible en esquina inferior derecha -->
-<div class="tb-version-tag" id="tb-version-tag">v45</div>
+<div class="tb-version-tag" id="tb-version-tag">v46</div>
 
 </body>
 </html>
